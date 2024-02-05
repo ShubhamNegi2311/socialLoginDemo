@@ -4,16 +4,17 @@
   "private": true,
   "scripts": {
     "android": "react-native run-android",
-    "ios": "react-native run-ios",
+    "ios": "react-native run-ios --simulator='iPhone 15'",
     "lint": "eslint .",
-    "start": "react-native start",
+    "start": "react-native start --reset-cache",
     "test": "jest",
-    "pods": "cd ios && pos install && cd .."
+    "pods": "cd ios && pod install && cd .."
   },
   "dependencies": {
     "@react-native-google-signin/google-signin": "^11.0.0",
     "react": "18.2.0",
-    "react-native": "0.73.1"
+    "react-native": "0.73.1",
+    "react-native-fbsdk-next": "^12.1.2"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

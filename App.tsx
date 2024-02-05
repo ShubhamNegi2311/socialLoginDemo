@@ -5,6 +5,13 @@ import {
 } from '@react-native-google-signin/google-signin';
 import React, {useEffect, useState} from 'react';
 import {Alert, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {
+  AccessToken,
+  GraphRequest,
+  GraphRequestManager,
+  LoginButton,
+  LoginManager,
+} from 'react-native-fbsdk-next';
 
 type Props = {};
 
@@ -84,6 +91,35 @@ const App = (props: Props) => {
     }
   };
 
+  // const infoRequest = new GraphRequest(
+  //   '/me',
+  //   {
+  //     parameters: {
+  //       fields: {
+  //         string: 'email,name',
+  //       },
+  //     },
+  //   },
+  //   (err, res) => {
+  //     console.log(err, res);
+  //   },
+  // );
+
+  const initUser = (token: string) => {
+    fetch(
+      'https://graph.facebook.com/v2.5/me?fields=email,name,friends&access_token=' +
+        token,
+    )
+      .then(response => response.json())
+      .then(json => {
+        // Some user object has been set up somewhere, build that user here
+        console.log('FACEBOOK_DATA ===>', JSON.stringify(json));
+      })
+      .catch(() => {
+        console.log('ERROR GETTING DATA FROM FACEBOOK');
+      });
+  };
+
   return (
     <View style={styles.main}>
       {!user.idToken ? (
@@ -92,9 +128,125 @@ const App = (props: Props) => {
         </TouchableOpacity>
       ) : (
         <TouchableOpacity onPress={signOut}>
-          <Text>Logout</Text>
+          <Text>Google Sign Out</Text>
         </TouchableOpacity>
       )}
+      <View style={{height: 100}} />
+
+      <LoginButton
+        onLoginFinished={(error, result) => {
+          if (error) {
+            console.log('login has error: ' + result.error);
+          } else if (result.isCancelled) {
+            console.log('login is cancelled.');
+          } else {
+            AccessToken.getCurrentAccessToken().then(data => {
+              console.log(data.accessToken.toString());
+              initUser(data?.accessToken?.toString());
+            });
+          }
+        }}
+        onLogoutFinished={() => console.log('logout.')}
+      />
+      <View style={{height: 100}} />
+      <TouchableOpacity
+        onPress={() => {
+          // LoginManager.logInWithPermissions(['public_profile']).then(
+          //   function (result) {
+          //     if (result.isCancelled) {
+          //       console.log('Login cancelled');
+          //     } else {
+          //       console.log(
+          //         'Login success with permissions: ' +
+          //           result.grantedPermissions.toString(),
+          //       );
+
+          //       const currentProfile = Profile.getCurrentProfile().then(
+          //         function (currentProfile) {
+          //           if (currentProfile) {
+          //             console.log(
+          //               'The current logged user is: ' +
+          //                 currentProfile.name +
+          //                 '. His profile id is: ' +
+          //                 currentProfile.userID,
+          //             );
+          //           }
+          //         },
+          //       );
+
+          //       console.log(
+          //         'PUBLIC_PROFILE ==>',
+          //         JSON.stringify(currentProfile),
+          //       );
+
+          //       // new GraphRequestManager().addRequest(infoRequest).start();
+          //     }
+          //   },
+          //   function (error) {
+          //     console.log('Login fail with error: ' + error);
+          //   },
+          // );
+
+          LoginManager.logInWithPermissions(['public_profile']).then(result => {
+            if (result.isCancelled) {
+              console.log('Login cancelled');
+            } else {
+              AccessToken.getCurrentAccessToken()
+                .then(user => {
+                  console.log(
+                    'Facebook accessToken:\n' +
+                      user.accessToken +
+                      '\n\naccessTokenSource: ' +
+                      user.accessTokenSource +
+                      '\n\nuserID: ' +
+                      user.userID,
+                  );
+                  console.log(user);
+                  return user;
+                })
+                .then(user => {
+                  const responseInfoCallback = (error, result) => {
+                    if (error) {
+                      console.log(error);
+                      console.log('Error fetching data: ' + error.toString());
+                    } else {
+                      console.log(result);
+                      console.log(
+                        'id: ' +
+                          result.id +
+                          '\n\nname: ' +
+                          result.name +
+                          '\n\nfirst_name: ' +
+                          result.first_name +
+                          '\n\nlast_name: ' +
+                          result.last_name +
+                          '\n\nemail: ' +
+                          result.email,
+                      );
+                    }
+                  };
+
+                  const infoRequest = new GraphRequest(
+                    '/me',
+                    {
+                      accessToken: user.accessToken,
+                      parameters: {
+                        fields: {
+                          string: 'email,name,first_name,last_name',
+                        },
+                      },
+                    },
+                    responseInfoCallback,
+                  );
+
+                  // Start the graph request.
+                  new GraphRequestManager().addRequest(infoRequest).start();
+                });
+            }
+          });
+        }}>
+        <Text>Facebook Login</Text>
+      </TouchableOpacity>
     </View>
   );
 };
